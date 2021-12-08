@@ -1,0 +1,39 @@
+name: Deploy web application to the remote server.
+on:
+ workflow_call:
+    inputs:
+      serverDirectory:
+        required: true
+        type: string
+      localDir:
+        required: true
+        type: string
+      filesToBeExcluded: 
+        required: true
+        type: string
+    secrets:
+      serverUserName:
+        required: true
+      serverPassword:
+        required: true
+      serverName:
+        required: true
+      serverPort:
+        required: true
+jobs:
+    deployment:
+       runs-on: ubuntu-latest  
+       steps:
+       - name: 🚚 Get latest code
+         uses: actions/checkout@v2
+       - name: 📂 Sync files 
+         uses: SamKirkland/FTP-Deploy-Action@4.1.0
+         with:
+          server: ${{ secrets.serverName }}
+          username: ${{ secrets.serverUserName }}
+          password: ${{ secrets.serverPassword }}
+          port: ${{ secrets.serverPort }}
+          local-dir: ${{ inputs.localDir }}
+          server-dir: ${{ inputs.serverDirectory }}
+          exclude: ${{ inputs.filesToBeExcluded }}
+

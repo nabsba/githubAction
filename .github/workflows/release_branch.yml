@@ -1,0 +1,76 @@
+name: Create release branch and merge it in master then push it.
+#### REMINDER ####
+# If major, the first number from the semver range will be increased (X.0.0):you up the major version when you make incompatible API changes
+# If minor, the second number from the semver range will be increased (0.X.0):you up the minor version when you add functionality in a backward-compatible manner
+# If patch, the third number from the semver range will be increased (0.0.X):you up the patch version when you make backward-compatible bug fixes
+on:
+  workflow_call:
+    # Inputs the workflow accepts.
+    inputs:
+      workingDirectory:
+        required: true
+        type: string 
+      versionType:
+        required: true
+        type: string
+      gitHubName:
+        required: true
+        type: string
+      gitHubRepository:
+        required: true
+        type: string
+      gitHubEmail:
+        required: true
+        type: string
+  
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out source
+      uses: actions/checkout@v2
+      with:
+         fetch-depth: 0
+         ssh-key: ${{ secrets.DEPLOY_KEY }}
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+        cache: 'yarn'
+        cache-dependency-path: ${{ inputs.workingDirectory }}/package.json
+    - name: Install packages
+      working-directory: ${{ inputs.workingDirectory }}
+      run: yarn install --frozen-lockfile
+    - name: Setup Git
+      run: |
+        git config user.name ${{ inputs.gitHubName }}
+        git config user.email ${{ inputs.gitHubEmail }}
+    - name: grasp the next ref of the new version store it in the var 'PACKAGE_VERSION'
+      working-directory: ${{ inputs.workingDirectory }}
+      run: |
+       #   echo "TEST=nab" >> $GITHUB_ENV
+          yarn version --${{ inputs.versionType }}
+          echo "PACKAGE_VERSION=$(cat package.json \
+          | grep version \
+          | head -1 \
+          | awk -F: '{ print $2 }' \
+          | sed 's/[",]//g' \
+          | tr -d '[[:space:]]')" >> $GITHUB_ENV
+          echo $PACKAGE_VERSION
+          git log --oneline
+    - name: Remove the previous commit made (automatically) from the previous command.
+      working-directory: ${{ inputs.workingDirectory }}
+      run: git reset HEAD~1 --hard   
+    - name: create branch 'release-[with-the-new-ref] / bump version / merge in master and push
+      working-directory: ${{ inputs.workingDirectory }}
+      run: |
+        # echo release-$TEST      
+          git pull origin master
+          git tag -d v$PACKAGE_VERSION
+          git checkout -b release-v$PACKAGE_VERSION develop
+          yarn version --${{ inputs.versionType }} 
+          git checkout master
+          git merge --no-ff release-$PACKAGE_VERSION
+          git tag -a $PACKAGE_VERSION
+          git remote set-url origin https://x-access-token:${{ secrets.githubActionToken }}@github.com/${{ inputs.gitHubName }}/${{ inputs.gitHubRepository }}
+          git push origin master --follow-tags
