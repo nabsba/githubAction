@@ -6,7 +6,7 @@ on:
       required: true
       type: string
 jobs:
-  lint: 
+  lintandtest: 
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
@@ -17,7 +17,7 @@ jobs:
     - name: install nodejs
       uses: actions/setup-node@v2
       with:
-        node-version: '18'
+        node-version: '17'
         cache: 'yarn'
         cache-dependency-path: ${{ inputs.workingDirectory }}/package.json
     - name: Install all packages
@@ -26,30 +26,32 @@ jobs:
       run: yarn install
     - name: run lint
       working-directory: ${{ inputs.workingDirectory }}
-      run: yarn lint:fix
-  test: 
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-    - name: Get latest code
-      uses: actions/checkout@v2
-    - name: install nodejs
-      uses: actions/setup-node@v2
-      with:
-        node-version: '18'
-        cache: 'yarn'
-        cache-dependency-path: ${{ inputs.workingDirectory }}/package.json
-    - name: check what is inside
-      run: ls
-    - name: Install all packages
-      working-directory: ${{ inputs.workingDirectory }}
-#       run: yarn install --frozen-lockfile
-      run: yarn install
-    - name: test
-      working-directory: ${{ inputs.workingDirectory }}
-      run: yarn test -u
+      run: |
+            yarn lint:fix
+            yarn test
+#   test: 
+#     runs-on: ${{matrix.os}}
+#     strategy:
+#       matrix:
+#         os: [ubuntu-latest, windows-latest, macos-latest]
+#     steps:
+#     - name: Get latest code
+#       uses: actions/checkout@v2
+#     - name: install nodejs
+#       uses: actions/setup-node@v2
+#       with:
+#         node-version: '14'
+#         cache: 'yarn'
+#         cache-dependency-path: ${{ inputs.workingDirectory }}/package.json
+#     - name: check what is inside
+#       run: ls
+#     - name: Install all packages
+#       working-directory: ${{ inputs.workingDirectory }}
+# #       run: yarn install --frozen-lockfile
+#       run: yarn install
+#     - name: test
+#       working-directory: ${{ inputs.workingDirectory }}
+#       run: yarn test -u
      
     
 
